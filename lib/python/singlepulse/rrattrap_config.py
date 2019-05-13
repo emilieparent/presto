@@ -3,7 +3,7 @@ from scipy.special import erf
 import numpy as np
 
 tel = 'GBNCC'
-#tel = 'PALFA'
+#tel = 'PALFA' #defaults are specific to PALFA
 
 CLOSE_DM = 2 # pc cm-3
 # MIN_GROUP, DM_THRESH, TIME_THRESH will change later on depending on the DDplan.
@@ -14,12 +14,12 @@ PLOT = True
 PLOTTYPE = 'pgplot' # 'pgplot' or 'matplotlib'
 RANKS_TO_WRITE = [2,0,3,4,5,6,7]
 RANKS_TO_PLOT = [2,3,4,5,6,7]
-IGNORE_OBS_END = 0 
-MAX_DM = 3100 
+IGNORE_OBS_END = 10 
+MAX_DM = 10000 
 
-if tel == 'PALFA':
-    IGNORE_OBS_END = 10
-    MAX_DM = 10000
+if tel == 'GBNCC':
+    IGNORE_OBS_END = 0
+    MAX_DM = 3100
 
 #Inputs for varying cluster size based on DM, S/N and pulse width
 if tel == 'GBNCC':
@@ -29,7 +29,12 @@ if tel == 'GBNCC':
     ####factors that mutliply DM_THRESH and TIME_THRESH 
     dm_fac_arr = np.array([1,2,3,5,10,30,50])
     t_fac_arr = np.array([1,1,1,2,4,6,8])
-elif tel == 'PALFA':
+    sp_width = 2 #threshold for creation of group with one pulse (useful for narrow pulses with high DMs)
+    sp_DM = 778.36
+    dm_arr_rank_7 = np.array([217.36, 390.76, 778.36, 1882.36])
+    t_arr_rank_7 = 1e-3*np.array([1.5, 3, 9, 13])
+else: 
+    ########This is specific to PALFA. You can add your survey's DDplan here. 
     DM_step = np.array([0.1,0.3,0.3,0.5,0.5,1.0,2.0,3.0,5.0])
     low_DM = np.array([0.0,212.8,443.2,534.4,876.4,990.4,1826.4,3266.4,5546.4])
     DM_THRESH = 0.5
@@ -37,14 +42,21 @@ elif tel == 'PALFA':
     ####To search 5 neighbouring DM trials at low DMs and 3 DM trials for pulses with DM > 3266####
     dm_fac_arr = np.array([1,3,3,5,5,10,20,18,30])
     t_fac_arr = np.array([1,2,3,5,6,10,10,10,10])          
-else:
-    ########This is specific to PALFA. You can add your survey's DDplan here. 
-    DM_step = np.array([0.1,0.3,0.3,0.5,0.5,1.0,2.0,3.0,5.0])
-    low_DM = np.array([0.0,212.8,443.2,534.4,876.4,990.4,1826.4,3266.4,5546.4])
-    DM_THRESH = 0.5
-    dm_fac_arr = np.array([1,3,3,5,5,10,20,18,30])
-    t_fac_arr = np.array([1,2,3,5,6,10,10,10,10]) 
+    sp_width = 3
+    sp_DM = 534.4
+    dm_arr_rank_7 = np.array([534.4, 990.4, 1826.4, 5546.4])
+    t_arr_rank_7 = 1e-3*np.array([2, 3, 5, 10])
 
+def assign_rank_7(opt_DM, duration_C):
+    """Decides whether to assign rank 7 to groups based on pulse width and DM"""
+    flag = False
+    for i in range(0, len(dm_arr_rank_7)-1):
+        if dm_arr_rank_7[i] < opt_DM < dm_arr_rank_7[i+1] and duration_C < t_arr_rank_7[i]:
+            flag = True
+    if opt_DM > dm_arr_rank_7[-1] and duration_C < t_arr_rank_7[-1]:
+        flag = True
+    return flag
+    
 def use_dmplan(DM):                                                                                              
     """ Sets a factor which multiplies the DMthreshold and time_threshold.                                                                      
         This makes the DM_THRESH and TIME_THRESH depend on the DM instead of having fixed                                                       

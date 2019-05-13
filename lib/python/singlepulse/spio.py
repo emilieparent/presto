@@ -247,10 +247,22 @@ def gen_arrays(dm, sp_files, tar, threshold):
         sigmas = data['sigma']
         widths = data['downfact']
     
-    dms = _np.delete(dms, (0), axis = 0)
-    times = _np.delete(times, (0), axis = 0)
-    sigmas = _np.delete(sigmas, (0), axis = 0)
-    widths = _np.delete(widths, (0), axis = 0)
+    try: 
+        dms = _np.delete(dms, (0), axis = 0)
+    except:
+        dms = _np.append(dms, 0.)
+    try: 
+        times = _np.delete(times, (0), axis = 0) 
+    except:
+        times = _np.append(times, 0.) 
+    try:
+        sigmas = _np.delete(sigmas, (0), axis = 0)
+    except:
+        sigmas = _np.append(sigmas, 0.) 
+    try:
+        widths = _np.delete(widths, (0), axis = 0)
+    except:
+        widths = _np.append(widths, 0.)
     return dms, times, sigmas, widths, singlepulsefiles
 
 def read_spd(spd_file, tar = None):
