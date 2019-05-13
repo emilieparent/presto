@@ -104,7 +104,7 @@ def make_spd_from_file(spdcand, rawdatafile, \
     if group_rank:
         groups=[group_rank-1]
     else:
-        groups = [i for i in range(6) if(i>=min_rank)][::-1]
+        groups = [i-1 for i in range(8) if(i>=min_rank)][::-1]
      
     for group in groups:
         rank = group+1
@@ -282,7 +282,7 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                          width_bins, downsamp, duration, nbins, nsub, rawdatafile.tsamp, \
                          rawdatafile.specinfo.N, \
                          rawdatafile.frequencies[0], rawdatafile.frequencies[-1], rawdatafile, \
-                         loc_pulse=loc_pulse, dedisp=True, scaleindep=False, zerodm=False, \
+                         loc_pulse=loc_pulse, dedisp=True, scaleindep=scaleindep, zerodm=False, \
                          mask=mask, barytime=barytime, bandpass_corr=bandpass_corr)
     #make an array to store header information for the spd files
     temp_filename = basename+"_DM%.1f_%.1fs"%(spdcand.subdm, spdcand.topo_start_time)
@@ -317,7 +317,7 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                           width_bins, downsamp, duration, nbins, nsub, rawdatafile.tsamp, \
                           rawdatafile.specinfo.N, \
                           rawdatafile.frequencies[0], rawdatafile.frequencies[-1], rawdatafile, \
-                          loc_pulse=loc_pulse, dedisp=None, scaleindep=None, zerodm=None, mask=mask, \
+                          loc_pulse=loc_pulse, dedisp=None, scaleindep=scaleindep, zerodm=None, mask=mask, \
                           barytime=barytime, bandpass_corr=bandpass_corr)
     data, Data_nozerodm = waterfall_array(rawdatafile, spdcand.start, \
                                  spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \

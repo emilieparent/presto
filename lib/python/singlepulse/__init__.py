@@ -7,3 +7,4 @@ import singlepulse.plot_spd
 import singlepulse.spcand
 import singlepulse.sp_pgplot
 import singlepulse.rrattrap_config
+import singlepulse.GBNCC_wrapper_make_spd
