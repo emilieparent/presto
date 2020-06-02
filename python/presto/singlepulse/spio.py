@@ -83,7 +83,7 @@ def read_RRATrap_info(groupfile, group_to_read, rank):
         print("Making arrays for DM vs Signal to Noise...")
         temp_list = files[group_to_read-6].split()
         npulses = int(temp_list[2])
-        temp_lines = files[(group_to_read+3):(group_to_read+npulses+1)]
+        temp_lines = files[(group_to_read+1):(group_to_read+npulses+1)]
         arr = _np.split(temp_lines, len(temp_lines))
         dm_list = []
         time_list = []
@@ -223,6 +223,8 @@ def gen_arrays(dm, sp_files, tar, threshold):
     max_dm = _np.ceil(_np.max(dm)).astype('int')
     min_dm = _np.min(dm).astype('int')
     diff_dm = max_dm-min_dm
+    if diff_dm < 10: #To choose an appropriate DM range for rank 7 candidates with few single pulse events
+        diff_dm = 10
     ddm = min_dm-diff_dm
     hidm = max_dm+diff_dm
     if (ddm <= 0):
@@ -249,10 +251,22 @@ def gen_arrays(dm, sp_files, tar, threshold):
         sigmas = data['sigma']
         widths = data['downfact']
     
-    dms = _np.delete(dms, (0), axis = 0)
-    times = _np.delete(times, (0), axis = 0)
-    sigmas = _np.delete(sigmas, (0), axis = 0)
-    widths = _np.delete(widths, (0), axis = 0)
+    try: 
+        dms = _np.delete(dms, (0), axis = 0)
+    except:
+        dms = _np.append(dms, 0.)
+    try: 
+        times = _np.delete(times, (0), axis = 0) 
+    except:
+        times = _np.append(times, 0.) 
+    try:
+        sigmas = _np.delete(sigmas, (0), axis = 0)
+    except:
+        sigmas = _np.append(sigmas, 0.) 
+    try:
+        widths = _np.delete(widths, (0), axis = 0)
+    except:
+        widths = _np.append(widths, 0.)
     return dms, times, sigmas, widths, singlepulsefiles
 
 def read_spd(spd_file, tar = None):

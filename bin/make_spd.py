@@ -167,6 +167,7 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                            spdcand.subdm, spdcand.zerodm, spdcand.downsamp, \
                                            spdcand.scaleindep, spdcand.width_bins, \
                                            mask, maskfile, spdcand.bandpass_corr,\
+                                           spdcand.mask, maskfile, spdcand.bandpass_corr,\
                                            save_mem)
                 text_array = np.append(text_array, spdcand.sweep_duration)
                 text_array = np.append(text_array, data.starttime)
