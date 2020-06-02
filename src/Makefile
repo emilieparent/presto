@@ -37,8 +37,10 @@ GLIBINC := $(shell pkg-config --cflags glib-2.0)
 GLIBLINK := $(shell pkg-config --libs glib-2.0)
 
 # Include and link information for CFITSIO
-CFITSIOINC := $(shell pkg-config --cflags cfitsio)
-CFITSIOLINK := $(shell pkg-config --libs cfitsio)
+CFITSIOINC := $(shell pkg-config --cflags cfitsio) 
+CFITSIOLINK := $(shell pkg-config --libs cfitsio) 
+#CFITSIOLINK_PC := $(shell pkg-config --libs cfitsio) 
+#CFITSIOLINK = $(CFITSIOLINK_PC) -lirc -lsvml
 
 # The standard PRESTO libraries to link into executables
 PRESTOLINK = $(CFITSIOLINK) -L$(PRESTO)/lib -lpresto $(FFTLINK)
@@ -48,14 +50,14 @@ CC = gcc
 FC = gfortran
 
 # Set this to true if you want to use OpenMP.  false otherwise
-USEOPENMP = true
+USEOPENMP = false
 
 # Set this to true if you want to profile.
 USEPROFILE = false
 
 # Very recent Intel CPUs might see a few percent speedup using -mavx
 CFLAGS = -I$(PRESTO)/include $(GLIBINC) $(CFITSIOINC) $(PGPLOTINC) $(FFTINC) \
-	-DUSEMMAP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 \
+	-DUSEFFTW -DUSEMMAP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 \
 	-g -Wall -W -fPIC -O3 -ffast-math
 CLINKFLAGS = $(CFLAGS)
 
