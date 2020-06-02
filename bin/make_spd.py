@@ -10,30 +10,29 @@ python make_spd.py [OPTIONS] <psrfits file> <singlepulse files>
 
 Chitrang Patel - May. 21, 2015 -- Updated on June 10 2016
 """
-from __future__ import print_function
-from builtins import map
-from builtins import range
-from time import strftime
 
+import sys
+import copy
+from time import strftime
+from subprocess import Popen, PIPE
 import numpy as np
 import optparse
-from presto import waterfaller
-from presto import psr_utils
-# todo: (gijs) plot_spd is a script, not a module.
+import waterfaller
+import psr_utils
 import plot_spd
-from presto.singlepulse import spcand as spcand
-from presto.singlepulse import spio as spio
-from presto import psrfits
-from presto import filterbank
-
+import singlepulse.spcand as spcand
+import singlepulse.spio as spio
+import psrfits
+import filterbank
+import spectra
 
 DEBUG = True
 def print_debug(msg):
     if DEBUG:
-        print(msg)
+        print msg
 
 def waterfall_array(rawdatafile, start, duration, dm, nbins, nsub, subdm, zerodm, \
-                    downsamp, scaleindep, width_bins, mask, maskfn, bandpass_corr):
+                    downsamp, scaleindep, width_bins, mask, maskfn, bandpass_corr, save_mem):
     """
     Runs the waterfaller. If dedispersing, there will be extra bins added to the 2D plot.
     Inputs:
@@ -46,7 +45,8 @@ def waterfall_array(rawdatafile, start, duration, dm, nbins, nsub, subdm, zerodm
                                                      nsub=nsub, subdm=subdm, zerodm=zerodm, \
                                                      downsamp=downsamp, scaleindep=scaleindep, \
                                                      width_bins=width_bins, mask=mask, \
-                                                     maskfn=maskfn, bandpass_corr=bandpass_corr)
+                                                     maskfn=maskfn, bandpass_corr=bandpass_corr)#,\
+                                                     #save_mem=save_mem)              !!!!!!!!!!!!!!!!!!!
     array = np.array(data.data)
     if dm is not None:            # If dedispersing the data, extra bins will be added. We need to cut off the extra bins to get back the appropriate window size.   
         ragfac = float(nbins)/bins
@@ -67,7 +67,7 @@ def make_spd_from_file(spdcand, rawdatafile, \
                        maxnumcands, \
                        basename, \
                        mask=False, bandpass_corr=True, barytime=True, \
-                       man_params=None):
+                       man_params=None, save_mem=False):
     
     """
     Makes spd files from output files of rratrap. 
@@ -104,7 +104,7 @@ def make_spd_from_file(spdcand, rawdatafile, \
     if group_rank:
         groups=[group_rank-1]
     else:
-        groups = [i for i in range(6) if(i>=min_rank)][::-1]
+        groups = [i-1 for i in range(8) if(i>=min_rank)][::-1]
      
     for group in groups:
         rank = group+1
@@ -135,7 +135,8 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                              spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                              spdcand.subdm, spdcand.zerodm, spdcand.downsamp, \
                                              spdcand.scaleindep, spdcand.width_bins, \
-                                             spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                             mask, maskfile, spdcand.bandpass_corr,\
+                                             save_mem)
 
                 text_array = np.array([args[0], rawdatafile.specinfo.telescope, \
                                        rawdatafile.specinfo.ra_str, rawdatafile.specinfo.dec_str, \
@@ -145,7 +146,6 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                        spdcand.width_bins, spdcand.pulse_width, rawdatafile.tsamp,\
                                        rawdatafile.specinfo.T, spdcand.topo_start_time, data.starttime, \
                                        data.dt,data.numspectra, data.freqs.min(), data.freqs.max()])
-
                 #### Array for plotting Dedispersed waterfall plot zerodm - ON
                 print_debug("Running Waterfaller with Zero-DM ON...")
                 zerodm=True
@@ -153,7 +153,8 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                            spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                            spdcand.subdm, zerodm, spdcand.downsamp, \
                                            spdcand.scaleindep, spdcand.width_bins, \
-                                           spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                           mask, maskfile, spdcand.bandpass_corr,\
+                                           save_mem)
                 ####Sweeped without zerodm
                 spdcand.read_from_file(values[ii], rawdatafile.tsamp, rawdatafile.specinfo.N, \
                                       rawdatafile.frequencies[0], rawdatafile.frequencies[-1], \
@@ -165,7 +166,8 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                            spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                            spdcand.subdm, spdcand.zerodm, spdcand.downsamp, \
                                            spdcand.scaleindep, spdcand.width_bins, \
-                                           spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                           mask, maskfile, spdcand.bandpass_corr,\
+                                           save_mem)
                 text_array = np.append(text_array, spdcand.sweep_duration)
                 text_array = np.append(text_array, data.starttime)
                 text_array = np.append(text_array, spdcand.bary_start_time)
@@ -184,7 +186,8 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                            spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                            spdcand.subdm, zerodm, spdcand.downsamp, \
                                            spdcand.scaleindep, spdcand.width_bins, \
-                                           spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                           mask, maskfile, spdcand.bandpass_corr,\
+                                           save_mem)
                 # Saving the arrays into the .spd file.
                 with open(temp_filename+".spd", 'wb') as f:
                     np.savez_compressed(f, \
@@ -194,11 +197,11 @@ def make_spd_from_file(spdcand, rawdatafile, \
                                         delays_nozerodm = delays_nozerodm, \
                                         freqs_nozerodm = freqs_nozerodm,\
                                         Data_zerodm = Data_zerodm.astype(np.float16), \
-                                        dm_arr= list(map(np.float16, dm_arr)),\
-                                        sigma_arr = list(map(np.float16, sigma_arr)), \
-                                        width_arr =list(map(np.uint8, width_arr)),\
-                                        dm_list= list(map(np.float16, dm_list)), \
-                                        time_list = list(map(np.float16, time_list)), \
+                                        dm_arr= map(np.float16, dm_arr),\
+                                        sigma_arr = map(np.float16, sigma_arr), \
+                                        width_arr =map(np.uint8, width_arr),\
+                                        dm_list= map(np.float16, dm_list), \
+                                        time_list = map(np.float16, time_list), \
                                         text_array = text_array)
                 #### Arrays for Plotting DM vs Time is in plot_spd.plot(...)
                 if plot:
@@ -234,7 +237,8 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                              spec_width, loc_pulse, \
                              integrate_ts, integrate_spec, disp_pulse, \
                              basename, \
-                             mask, bandpass_corr, barytime, man_params):            
+                             mask, bandpass_corr, barytime, man_params,\
+                             save_mem):            
     """
     Makes spd files from output files of rratrap. 
     Inputs:
@@ -292,7 +296,8 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                                  spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                  spdcand.subdm, spdcand.zerodm, spdcand.downsamp, \
                                  spdcand.scaleindep, spdcand.width_bins, \
-                                 spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                 spdcand.mask, maskfile, spdcand.bandpass_corr,\
+                                 save_mem)
     # Add additional information to the header information array
     text_array = np.array([args[0], rawdatafile.specinfo.telescope, \
                            rawdatafile.specinfo.ra_str, rawdatafile.specinfo.dec_str, \
@@ -311,7 +316,8 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                                  spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                  spdcand.subdm, zerodm, spdcand.downsamp, \
                                  spdcand.scaleindep, spdcand.width_bins, \
-                                 spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                 spdcand.mask, maskfile, spdcand.bandpass_corr,\
+                                 save_mem)
     ####Sweeped without zerodm
     spdcand.manual_params(subdm, dm, sweep_dm, sigma, start_time, \
                           width_bins, downsamp, duration, nbins, nsub, rawdatafile.tsamp, \
@@ -323,7 +329,8 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                                  spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                  spdcand.subdm, spdcand.zerodm, spdcand.downsamp, \
                                  spdcand.scaleindep, spdcand.width_bins, \
-                                 spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                 spdcand.mask, maskfile, spdcand.bandpass_corr,\
+                                 save_mem)
     text_array = np.append(text_array, spdcand.sweep_duration)
     text_array = np.append(text_array, data.starttime)
     text_array = np.append(text_array, spdcand.bary_start_time)
@@ -342,7 +349,8 @@ def make_spd_from_man_params(spdcand, rawdatafile, \
                                  spdcand.duration, spdcand.dm, spdcand.nbins, spdcand.nsub, \
                                  spdcand.subdm, zerodm, spdcand.downsamp, \
                                  spdcand.scaleindep, spdcand.width_bins, \
-                                 spdcand.mask, maskfile, spdcand.bandpass_corr)
+                                 spdcand.mask, maskfile, spdcand.bandpass_corr,\
+                                 save_mem)
     with open(temp_filename+".spd", 'wb') as f:
         np.savez_compressed(f, \
                             Data_dedisp_nozerodm = Data_dedisp_nozerodm.astype(np.float16),\
@@ -394,7 +402,8 @@ def main():
                            options.maxnumcands, \
                            basename, \
                            mask=options.mask, barytime=options.barytime, \
-                           bandpass_corr=options.bandpass_corr)
+                           bandpass_corr=options.bandpass_corr,\
+                           save_mem = options.save_mem)
     else:
         print_debug("Making spd files based on mannual parameters. I suggest" \
                     "reading in parameters from the groups.txt file.")
@@ -411,7 +420,8 @@ def main():
                                  options.integrate_ts, options.integrate_spec, options.disp_pulse, \
                                  basename, \
                                  options.mask, options.bandpass_corr, options.barytime, \
-                                 options.man_params)            
+                                 options.man_params,\
+                                 options.save_mem)
 
 if __name__=='__main__':
     parser = optparse.OptionParser(prog="sp_pipeline..py", \
@@ -543,6 +553,9 @@ if __name__=='__main__':
     parser.add_option('--just-waterfall', dest='just_waterfall', action='store_true', \
                         help="Only produce the waterfall plots (frequency vs Time).", \
                         default=False)
+    parser.add_option('--save-mem', dest='save_mem', action='store_true', \
+                        help="Reduce the memory usage by a factor of 2. " \
+                                "(Default: Dont save memory.", default=False)
     options, args = parser.parse_args()
 
     if not (args[0].endswith("fits") or args[0].endswith("fil")):
